@@ -22,8 +22,9 @@ module.exports = {
     '('+
      'id int references Users(id) PRIMARY KEY,' +
      'name varchar(20), ' +
-     'restrictions varchar(50)[],' +
-     'allergies varchar(50)[]' +
+     'restrictions varchar(50)[], ' +
+     'allergies varchar(50)[], ' +
+     'match varchar(50)' + 
      ')',
   //sql command for recipe profile join table
   createUserRecipesTable: 'CREATE TABLE IF NOT EXISTS UserRecipes' +
@@ -31,6 +32,12 @@ module.exports = {
      'profileid int references Profiles(id),' +
      'recipeid int references Recipes(id), ' +
      'created bool' +
+     ')',
+  // sql command for match join table
+  createMatchesTable: 'CREATE TABLE IF NOT EXISTS Matches' +
+    '('+
+     'userOne int references Profiles(id),' +
+     'userTwo int references Profiles(id) ' +
      ')'
 
 }

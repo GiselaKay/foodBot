@@ -2,7 +2,8 @@
 var matchController = require('../controllers/matchController.js');
 var recipeController = require('../controllers/recipeController.js');
 var userController = require('../controllers/userController.js');
-var profileController = require('../controllers/profileController.js');
+var mealController = require('../controllers/mealController.js');
+
 var helpers = require('./helpers.js');
 
 
@@ -16,8 +17,11 @@ module.exports = function(app, express) {
 	// app.post('/foodBot/recipes/', recipeController.addMeal); // Add AuthChecker
 	app.get('/foodBot/recipes/:id',  recipeController.retrieveSuggestedRecipes); // Add AuthChecker
 
-	app.get('/foodBot/meals/:id', profileController.retrieveUserMeals); // Add AuthChecker
-	app.post('/foodBot/meals/:id', profileController.addUserMeal); // Add AuthChecker
+	app.get('/foodBot/meals/:id', mealController.retrieveUserMeals); // Add AuthChecker
+	app.post('/foodBot/meals/:id', mealController.addUserMeal); // Add AuthChecker
+
+	app.get('/foodBot/match/:id', matchController.createMatch);
+	// app.get('/foodBot/match/:id', matchController.)
 	// app.get('/foodBot/users/home/:username', dashboardController.getUserProfile) // Add AuthChecker
 
 };
