@@ -22,7 +22,8 @@ module.exports = {
     'cost int ,' +
     "image varchar(255) DEFAULT 'http://lh4.ggpht.com/iEyogFzb2gMbVBLSjgPL0qSETW76pRG1hQYRjLOnmU4JDgMdc65v53OZ3WWSvuRO_kY'," +
     'complexity int,' +
-    'yummly_id varchar(255) UNIQUE,' +
+    'recipe_source_id varchar(255) UNIQUE,' +
+    'source_id int references RecipeSources(id) NOT NULL,' +
     'rating int' +
     ')',
 
@@ -52,7 +53,12 @@ module.exports = {
   createMatchesQueueTable: 'CREATE TABLE IF NOT EXISTS MatchesQueue' +
     '('+
      'userOne int references Profiles(id) NOT NULL'+
-     ')'
-
+     ')',
+  
+  createRecipeSourcesTable: 'CREATE TABLE IF NOT EXISTS RecipeSources' +
+    '(' +
+      'id SERIAL NOT NULL PRIMARY KEY,' + 
+      'name varchar(50)' +
+    ')'
 }
 
