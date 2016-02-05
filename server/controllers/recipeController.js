@@ -3,6 +3,9 @@ var connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/
 var Promise = require('bluebird');
 var request = require('request');
 var apiKeys = require('../config/apiKeys');
+var purchaseController = require('./purchaseController');
+
+var client = new pg.Client(connectionString);
 
 var cooking = {
 	1: 600, // half hour in secs
@@ -18,7 +21,6 @@ var cooking = {
 
 
 	getRecipesFromYummly = function (uid) {
-		var client = new pg.Client(connectionString);
 		client.connect();
 		var yummlyRecipes;
 		console.log("in yummly",uid)
@@ -29,6 +31,7 @@ var cooking = {
 				console.log("returning foodq promise")
 				var start;
 				var startQuery = client.query("SELECT Count(*) FROM recipes WHERE sourceid=1", function (err, result){
+					console.log(result)
 					start = parseInt(result.rows[0].count) + 2;
 
 				})
@@ -45,6 +48,7 @@ var cooking = {
 						"&maxResult=10" +
 						"&start=" + start
 						, function (error, response, body) {
+							console.log(error, response.statusCode)
 							if (!error && response.statusCode == 200) {
 								yummlyRecipes = body
 								console.log("result:", yummlyRecipes)
@@ -59,27 +63,45 @@ var cooking = {
 
 		foodQ().then(function (yummlyRecipes) {
 			console.log("about to insert into db")
-			var insertRecipesIntoDB = function () {
-				yummlyRecipes = JSON.parse(yummlyRecipes);
-				yummlyRecipes.matches.forEach(function (recipe, index) {
-					if (recipe.totalTimeInSeconds >= cooking[2]) {
-						recipe.cookingTime = 3;
-					} else if (recipe.totalTimeInSeconds >= cooking[1] && recipe.totalTimeInSeconds < cooking[2]) {
-						recipe.cookingTime = 2;
-					} else {
-						recipe.cookingTime = 1;
-					}
-					var recipeImg = recipe.smallImageUrls ? recipe.smallImageUrls[0] + "0-c": recipe.imageUrlsBySize[Object.keys(recipe.imageUrlsBySize)[0]].replace("90","900")
-					client.query("INSERT INTO Recipes (name, exactcookingtime, image, directionsUrl, cookingtime, recipesourceid, rating, sourceid) VALUES ('" + recipe.recipeName + "', " + recipe.totalTimeInSeconds + ", '" + recipeImg + "0-c', 'http://www.yummly.com/recipe/external/" + recipe.id + "', " + recipe.cookingTime + ", '" + recipe.id + "', " + recipe.rating + ", 1) " , function (err) {
-						if (err){
-							console.log("yummly recipe already saved in db")
-						}
-						console.log("added recipe to database")
+			var addIngriedientToDB = function (ingredientLine) {
+				console.log(ingredientLine)
+				var addIngredientsQuery = client.query("INSERT INTO ingredients (name) VALUES (" + ingredientLine +")", function () {
+					purchaseController.findIngredient(ingredientLine);
+				})
+			}
+			var getIngredientsFromYummly = function (recipeid) {
+				// console.log(re)
+				request("http://api.yummly.com/v1/api/recipe/" + recipeid + "?_app_id=" + apiKeys.yummly.id + "&_app_key=" + apiKeys.yummly.key + "", function (err, result) {
+					JSON.parse(result.body).ingredientLines.forEach( function (ingriedient){
+						addIngriedientToDB(ingriedient);
 					})
+
+				})
+			}
+			var insertRecipesIntoDB = function (recipe) {
+				var addCookingTime = function (){
+					if (recipe.totalTimeInSeconds >= cooking[2]) {
+						return cookingTime = 3;
+					} else if (recipe.totalTimeInSeconds >= cooking[1] && recipe.totalTimeInSeconds < cooking[2]) {
+						return cookingTime = 2;
+					} else {
+						return cookingTime = 1;
+					} 	
+				}
+				var recipeImg = recipe.smallImageUrls ? recipe.smallImageUrls[0] + "0-c": recipe.imageUrlsBySize[Object.keys(recipe.imageUrlsBySize)[0]].replace("90","900")
+				client.query("INSERT INTO Recipes (name, exactcookingtime, image, directionsUrl, cookingtime, recipesourceid, rating, sourceid) VALUES ('" + recipe.recipeName + "', " + recipe.totalTimeInSeconds + ", '" + recipeImg + "0-c', 'http://www.yummly.com/recipe/external/" + recipe.id + "', " + addCookingTime() + ", '" + recipe.id + "', " + recipe.rating + ", 1) " , function (err) {
+					if (err){
+						console.log("yummly recipe already saved in db")
+					}
+					console.log("added recipe to database")
 				})
 
 			};
-			insertRecipesIntoDB();
+			yummlyRecipes = JSON.parse(yummlyRecipes);
+			yummlyRecipes.matches.forEach(function (recipe, index) {
+				getIngredientsFromYummly(recipe.id)
+				insertRecipesIntoDB(recipe);
+			})
 		});
 	}
 
@@ -135,7 +157,7 @@ module.exports = {
 				var sendData = {recipes: recipeResults }
 				// console.log("sending this thingy:",sendData)	
 				res.status(200).json(sendData);
-				var lowOnViableRecipes = 50;
+				var lowOnViableRecipes = 500;
 				console.log("getting from yummly")
 				if (totalMatches < lowOnViableRecipes) {
 					client.end();

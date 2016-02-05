@@ -2,13 +2,49 @@ var pg = require('pg');
 var connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/foodbot';
 var auth = require('../config/authOperations.js');
 var Promise = require('bluebird');
+var request = require('request');
+var apiKeys = require('../config/apiKeys');
 
 module.exports = {
   signup: function(req, res) {
+    var iamdatasignup = function (user) {
+      // console.log(apiKeys.iamdata.id, a)
+      var createUser = {
+        method: 'POST',
+        body: {"email": user.email, "zip": "94132", "user_id": user.id},
+        json: true,
+        url: "https://api.iamdata.co:443/v1/users?client_id="+ apiKeys.iamdata.id + "&client_secret=" + apiKeys.iamdata.secret + "" 
+      }
+      request(createUser, function(err, response, body) {
+        // console.log("err:",error)
+        if (!err) {
+          var addAmazon = {
+            method: 'POST',
+            body: {"store_id": 1006, "username": "" + user.email, "password": "gigiAmazon09"},
+            json: true,
+            url: "https://api.iamdata.co:443/v1/users/" + user.id + "/stores?client_id="+ apiKeys.iamdata.id + "&client_secret=" + apiKeys.iamdata.secret + "" 
+          }
+          request(addAmazon, function (err, response, body){
+            if (err !== null) {
+              console.log("ERROR WITH ADDING TO AMAZON: ", err)
+            }
+            console.log("body2:", body)
+          })
+          console.log("body: ",body);
+          
+        }
+        console.log("ERROR WITH ADDING USER TO IAMDATA: ", err)
+      });
+
+    }
+
     var client = new pg.Client(connectionString);
     client.connect();
+
+
     //check if username already exists
     var checkUserQuery = client.query("SELECT * FROM Users where email ='"+req.body.email+"';", function(err, data) {
+      var userData;
       if (err) {
         res.status(500).json("We're sorry, an error has occurred");
       } else if (data.rows.length > 0) {
@@ -21,7 +57,7 @@ module.exports = {
         // });
       } else {
         var createUserQuery = client.query("INSERT INTO Users (password, email) VALUES (crypt('"+req.body.password+"', gen_salt('bf', 8)),'"+req.body.email+"') RETURNING id;", function(err, data) {
-          var userData = {
+          userData = {
             id: data.rows[0].id,
             email: data.rows[0].email
           }
@@ -29,6 +65,7 @@ module.exports = {
         });
         createUserQuery.on('end', function(results) {
           auth.createSession(req, res, req.body.email)
+          iamdatasignup(userData)
           // res.status(201).json('User session created');
         });
       }
