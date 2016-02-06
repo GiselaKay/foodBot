@@ -7,36 +7,36 @@ var apiKeys = require('../config/apiKeys');
 
 module.exports = {
   signup: function(req, res) {
-    var iamdatasignup = function (user) {
-      // console.log(apiKeys.iamdata.id, a)
-      var createUser = {
-        method: 'POST',
-        body: {"email": user.email, "zip": "94132", "user_id": user.id},
-        json: true,
-        url: "https://api.iamdata.co:443/v1/users?client_id="+ apiKeys.iamdata.id + "&client_secret=" + apiKeys.iamdata.secret + "" 
-      }
-      request(createUser, function(err, response, body) {
-        // console.log("err:",error)
-        if (!err) {
-          var addAmazon = {
-            method: 'POST',
-            body: {"store_id": 1006, "username": "" + user.email, "password": "gigiAmazon09"},
-            json: true,
-            url: "https://api.iamdata.co:443/v1/users/" + user.id + "/stores?client_id="+ apiKeys.iamdata.id + "&client_secret=" + apiKeys.iamdata.secret + "" 
-          }
-          request(addAmazon, function (err, response, body){
-            if (err !== null) {
-              console.log("ERROR WITH ADDING TO AMAZON: ", err)
-            }
-            console.log("body2:", body)
-          })
-          console.log("body: ",body);
+    // var iamdatasignup = function (user) {
+    //   // console.log(apiKeys.iamdata.id, a)
+    //   var createUser = {
+    //     method: 'POST',
+    //     body: {"email": user.email, "zip": "94132", "user_id": user.id},
+    //     json: true,
+    //     url: "https://api.iamdata.co:443/v1/users?client_id="+ apiKeys.iamdata.id + "&client_secret=" + apiKeys.iamdata.secret + "" 
+    //   }
+    //   request(createUser, function(err, response, body) {
+    //     // console.log("err:",error)
+    //     if (!err) {
+    //       var addAmazon = {
+    //         method: 'POST',
+    //         body: {"store_id": 1006, "username": "" + user.email, "password": "gigiAmazon09"},
+    //         json: true,
+    //         url: "https://api.iamdata.co:443/v1/users/" + user.id + "/stores?client_id="+ apiKeys.iamdata.id + "&client_secret=" + apiKeys.iamdata.secret + "" 
+    //       }
+    //       request(addAmazon, function (err, response, body){
+    //         if (err !== null) {
+    //           console.log("ERROR WITH ADDING TO AMAZON: ", err)
+    //         }
+    //         console.log("body2:", body)
+    //       })
+    //       console.log("body: ",body);
           
-        }
-        console.log("ERROR WITH ADDING USER TO IAMDATA: ", err)
-      });
+    //     }
+    //     console.log("ERROR WITH ADDING USER TO IAMDATA: ", err)
+    //   });
 
-    }
+    // }
 
     var client = new pg.Client(connectionString);
     client.connect();
@@ -65,7 +65,7 @@ module.exports = {
         });
         createUserQuery.on('end', function(results) {
           auth.createSession(req, res, req.body.email)
-          iamdatasignup(userData)
+          // iamdatasignup(userData)
           // res.status(201).json('User session created');
         });
       }
